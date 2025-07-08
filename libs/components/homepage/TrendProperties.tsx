@@ -10,7 +10,6 @@ import { PropertiesInquiry } from '../../types/property/property.input';
 import TrendPropertyCard from './TrendPropertyCard';
 import { useQuery } from '@apollo/client';
 import { GET_PROPERTIES } from '../../../apollo/user/query';
-import { T } from '../../types/common';
 
 interface TrendPropertiesProps {
 	initialInput: PropertiesInquiry;
@@ -38,9 +37,6 @@ const TrendProperties = (props: TrendPropertiesProps) => {
 	  });
 	  
 	/** HANDLERS **/
-
-	if (trendProperties) console.log('trendProperties:', trendProperties);
-	if (!trendProperties) return null;
 
 	if (device === 'mobile') {
 		return (
