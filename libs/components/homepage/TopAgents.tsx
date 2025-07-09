@@ -22,7 +22,7 @@ const TopAgents = (props: TopAgentsProps) => {
 	const [topAgents, setTopAgents] = useState<Member[]>([]);
 
 	/** APOLLO REQUESTS **/
-
+	console.log("✅ final input:", initialInput);
 	const {
 		loading: getAgentsLoading,
 		data: getAgentsData,
@@ -33,9 +33,14 @@ const TopAgents = (props: TopAgentsProps) => {
 		variables: { input: initialInput },
 		notifyOnNetworkStatusChange: true,
 		onCompleted: (data) => {
+			console.log("✅ getAgentsData:", data);
 			setTopAgents(data?.getAgents?.list);
 		},
+		onError: (error) => {
+			console.error("❌ getAgentsError:", error);
+		  },
 	});
+
 	/** HANDLERS **/
 
 	if (device === 'mobile') {
@@ -119,7 +124,7 @@ TopAgents.defaultProps = {
 	initialInput: {
 		page: 1,
 		limit: 10,
-		sort: 'memberRank',
+		// sort: 'createdAt',
 		direction: 'DESC',
 		search: {},
 	},
