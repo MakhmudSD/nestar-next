@@ -11,7 +11,7 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import WestIcon from '@mui/icons-material/West';
 import EastIcon from '@mui/icons-material/East';
-import { useQuery, useReactiveVar } from '@apollo/client';
+import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { useRouter } from 'next/router';
 import { Property } from '../../libs/types/property/property';
 import moment from 'moment';
@@ -29,7 +29,9 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { GET_PROPERTIES, GET_PROPERTY } from '../../apollo/user/query';
 import { T } from '../../libs/types/common';
-import { Direction } from '../../libs/enums/common.enum';
+import { Direction, Message } from '../../libs/enums/common.enum';
+import { LIKE_TARGET_PROPERTY } from '../../apollo/user/mutation';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
 SwiperCore.use([Autoplay, Navigation, Pagination]);
 
@@ -39,7 +41,7 @@ export const getStaticProps = async ({ locale }: any) => ({
 	},
 });
 
-const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
+const PropertyDetail: NextPage = ({ initialComment, initialInput, ...props }: any) => {
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const user = useReactiveVar(userVar);
@@ -57,7 +59,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	});
 
 	/** APOLLO REQUESTS **/
-
+	const [likeTargetProperty] = useMutation(LIKE_TARGET_PROPERTY)
 	const {
 		loading: getPropertyLoading,
 		data: getPropertyData,
@@ -66,15 +68,14 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	} = useQuery(GET_PROPERTY, {
 		fetchPolicy: 'cache-and-network',
 		variables: { input: propertyId },
-		skip: !property?._id,
+		skip: !propertyId,
 		notifyOnNetworkStatusChange: true,
 		onCompleted: (data: T) => {
 			if (data?.getProperty) setProperty(data?.getProperty);
-			if (data?.getProperty) setSlideImage(data?.getProperty?.propertyImage[0]);
+			if (data?.getProperty) setSlideImage(data?.getProperty?.propertyImages[0]);
 		},
 	});
 
-	// PropertyDetail.tsx - Adjust GET_PROPERTIES query's skip condition and onCompleted
 	const {
 		loading: getPropertiesLoading,
 		data: getPropertiesData,
@@ -89,16 +90,14 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 				sort: 'createdAt',
 				direction: Direction.DESC,
 				search: {
-					locationList: property?.propertyLocation ? [property.propertyLocation] : [], // Ensure location is present
+					locationList: [property?.propertyLocation],
 				},
 			},
 		},
-		skip: !property?.propertyLocation, // Skip only if propertyLocation is not yet available
+		skip: !propertyId && !property,
 		notifyOnNetworkStatusChange: true,
 		onCompleted: (data: T) => {
-			if (data?.getProperties?.list) {
-				setDestinationProperties(data?.getProperties?.list);
-			}
+			if (data?.getProperties?.list) setDestinationProperties(data?.getProperties?.list);
 		},
 	});
 
@@ -125,6 +124,32 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 	const changeImageHandler = (image: string) => {
 		setSlideImage(image);
 	};
+	
+	const likePropertyHandler = async (user: T, id: string) => {
+		try {
+			if (!id) return;
+			if (!user._id) throw new Error(Message.SOMETHING_WENT_WRONG);
+			await likeTargetProperty({ variables: { input: id } }); // server update
+			await getPropertyRefetch({
+				variables: {input: id}
+			})
+			await getPropertiesRefetch({
+				input: {
+					page: 1,
+					limit: 4,
+					sort: 'createdAt',
+					direction: Direction.DESC,
+					search: {
+						locationList: [property?.propertyLocation],
+					},
+				},
+			}); // frontend update
+			await sweetTopSmallSuccessAlert('success', 800);
+		} catch (err: any) {
+			console.log('ERROR on likePropertyHandler', err.message);
+			sweetMixinErrorAlert(err.message).then();
+		}
+	};		
 
 	const commentPaginationChangeHandler = async (event: ChangeEvent<unknown>, value: number) => {
 		commentInquiry.page = value;
@@ -564,7 +589,7 @@ const PropertyDetail: NextPage = ({ initialComment, ...props }: any) => {
 										{destinationProperties.map((property: Property) => {
 											return (
 												<SwiperSlide className={'similar-homes-slide'} key={property.propertyTitle}>
-													<PropertyBigCard property={property} key={property?._id} />
+													<PropertyBigCard property={property} likePropertyHandler={likePropertyHandler} key={property?._id} />
 												</SwiperSlide>
 											);
 										})}
