@@ -23,7 +23,7 @@ export interface AgentsInquiry {
 	limit: number;
 	sort?: string;
 	direction?: Direction;
-	search: AISearch;
+	search?: AISearch;
 }
 
 interface MISearch {
