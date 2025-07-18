@@ -11,6 +11,11 @@ import { T } from '../../libs/types/common';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { BoardArticlesInquiry } from '../../libs/types/board-article/board-article.input';
 import { BoardArticleCategory } from '../../libs/enums/board-article.enum';
+import { useMutation, useQuery } from '@apollo/client';
+import { LIKE_TARGET_BOARD_ARTICLE } from '../../apollo/user/mutation';
+import { GET_BOARD_ARTICLES } from '../../apollo/user/query';
+import { Message } from '../../libs/enums/common.enum';
+import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
@@ -25,11 +30,27 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 	const articleCategory = query?.articleCategory as string;
 	const [searchCommunity, setSearchCommunity] = useState<BoardArticlesInquiry>(initialInput);
 	const [boardArticles, setBoardArticles] = useState<BoardArticle[]>([]);
-	const [totalCount, setTotalCount] = useState<number>(0);
+	const [total, setTotal] = useState<number>(0);
 	if (articleCategory) initialInput.search.articleCategory = articleCategory;
 
 	/** APOLLO REQUESTS **/
-
+	const [likeTargetArticle] = useMutation(LIKE_TARGET_BOARD_ARTICLE);
+	const {
+		loading: getArticlesLoading,
+		data: getArticlesData,
+		error: getArticlesError,
+		refetch: getArticlesRefetch,
+	} = useQuery(GET_BOARD_ARTICLES, {
+		fetchPolicy: 'cache-and-network',
+		variables: {
+			input: searchCommunity,
+		},
+		notifyOnNetworkStatusChange: true,
+		onCompleted: (data: T) => {
+			setBoardArticles(data?.getBoardArticles?.list);
+			setTotal(data?.getBoardArticles?.metaCounter[0]?.total);
+		},
+	});
 	/** LIFECYCLES **/
 	useEffect(() => {
 		if (!query?.articleCategory)
@@ -60,6 +81,21 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 
 	const paginationHandler = (e: T, value: number) => {
 		setSearchCommunity({ ...searchCommunity, page: value });
+	};
+
+	const likeArticleHandler = async (e:any, user: T, id: string) => {
+		try {
+			e.stopPropagation();
+			if (!id) return;
+			if (!user._id) throw new Error(Message.NOT_AUTHENTICATED);
+
+			await likeTargetArticle({ variables: { input: id } });
+			await getArticlesRefetch({ input: initialInput });
+			await sweetTopSmallSuccessAlert('Success', 700);
+		} catch (err: any) {
+			console.log('ERROR, likeArticleHandler:', err.message);
+			await sweetMixinErrorAlert(err.message).then();
+		}
 	};
 
 	if (device === 'mobile') {
@@ -134,9 +170,15 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 
 									<TabPanel value="FREE">
 										<Stack className="list-box">
-											{totalCount ? (
+											{total ? (
 												boardArticles?.map((boardArticle: BoardArticle) => {
-													return <CommunityCard boardArticle={boardArticle} key={boardArticle?._id} />;
+													return (
+														<CommunityCard
+															boardArticle={boardArticle}
+															key={boardArticle?._id}
+															likeArticleHandler={likeArticleHandler}
+														/>
+													);
 												})
 											) : (
 												<Stack className={'no-data'}>
@@ -148,9 +190,15 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 									</TabPanel>
 									<TabPanel value="RECOMMEND">
 										<Stack className="list-box">
-											{totalCount ? (
+											{total ? (
 												boardArticles?.map((boardArticle: BoardArticle) => {
-													return <CommunityCard boardArticle={boardArticle} key={boardArticle?._id} />;
+													return (
+														<CommunityCard
+															boardArticle={boardArticle}
+															likeArticleHandler={likeArticleHandler}
+															key={boardArticle?._id}
+														/>
+													);
 												})
 											) : (
 												<Stack className={'no-data'}>
@@ -162,9 +210,15 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 									</TabPanel>
 									<TabPanel value="NEWS">
 										<Stack className="list-box">
-											{totalCount ? (
+											{total ? (
 												boardArticles?.map((boardArticle: BoardArticle) => {
-													return <CommunityCard boardArticle={boardArticle} key={boardArticle?._id} />;
+													return (
+														<CommunityCard
+															boardArticle={boardArticle}
+															likeArticleHandler={likeArticleHandler}
+															key={boardArticle?._id}
+														/>
+													);
 												})
 											) : (
 												<Stack className={'no-data'}>
@@ -176,9 +230,15 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 									</TabPanel>
 									<TabPanel value="HUMOR">
 										<Stack className="list-box">
-											{totalCount ? (
+											{total ? (
 												boardArticles?.map((boardArticle: BoardArticle) => {
-													return <CommunityCard boardArticle={boardArticle} key={boardArticle?._id} />;
+													return (
+														<CommunityCard
+															boardArticle={boardArticle}
+															likeArticleHandler={likeArticleHandler}
+															key={boardArticle?._id}
+														/>
+													);
 												})
 											) : (
 												<Stack className={'no-data'}>
@@ -193,11 +253,11 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 						</Stack>
 					</TabContext>
 
-					{totalCount > 0 && (
+					{total > 0 && (
 						<Stack className="pagination-config">
 							<Stack className="pagination-box">
 								<Pagination
-									count={Math.ceil(totalCount / searchCommunity.limit)}
+									count={Math.ceil(total / searchCommunity.limit)}
 									page={searchCommunity.page}
 									shape="circular"
 									color="primary"
@@ -206,7 +266,7 @@ const Community: NextPage = ({ initialInput, ...props }: T) => {
 							</Stack>
 							<Stack className="total-result">
 								<Typography>
-									Total {totalCount} article{totalCount > 1 ? 's' : ''} available
+									Total {total} article{total > 1 ? 's' : ''} available
 								</Typography>
 							</Stack>
 						</Stack>
