@@ -13,6 +13,7 @@ import { LIKE_TARGET_MEMBER } from '../../apollo/user/mutation';
 import { useMutation, useQuery } from '@apollo/client';
 import { GET_AGENTS } from '../../apollo/user/query';
 import { sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../libs/sweetAlert';
+import { Message } from '../../libs/enums/common.enum';
 
 export const getStaticProps = async ({ locale }: any) => ({
 	props: {
@@ -64,6 +65,10 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 		setCurrentPage(searchFilter.page === undefined ? 1 : searchFilter.page);
 	}, [router]);
 
+	useEffect(() => {
+		getAgentsRefetch({ variables: { input: searchFilter } }).then();
+	}, [searchFilter]);
+
 	/** HANDLERS **/
 	const sortingClickHandler = (e: MouseEvent<HTMLElement>) => {
 		setAnchorEl(e.currentTarget);
@@ -109,7 +114,7 @@ const AgentList: NextPage = ({ initialInput, ...props }: any) => {
 	const likeMemberHandler = async (user: any, id: string) => {
 		try {
 			if (!id) return;
-			if (!user._id) throw new Error('Something went wrong');
+			if (!user._id) throw new Error(Message.SOMETHING_WENT_WRONG);
 			await likeTargetMember({ variables: { input: id } }); // server update
 
 			await getAgentsRefetch({ input: searchFilter }); // frontend update

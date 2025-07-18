@@ -13,7 +13,7 @@ import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 
 interface PropertyBigCardProps {
 	property: Property;
-	likePropertyHandler: any
+	likePropertyHandler?:any
 }
 
 const PropertyBigCard = (props: PropertyBigCardProps) => {
@@ -23,7 +23,7 @@ const PropertyBigCard = (props: PropertyBigCardProps) => {
 	const router = useRouter();
 
 	/** HANDLERS **/
-	const goPropertyDetailPage = (propertyId: string) => {
+	const goPropertyDetatilPage = (propertyId: string) => {
 		router.push(`/property/detail?id=${propertyId}`);
 	};
 
@@ -31,7 +31,7 @@ const PropertyBigCard = (props: PropertyBigCardProps) => {
 		return <div>APARTMEND BIG CARD</div>;
 	} else {
 		return (
-			<Stack className="property-big-card-box" onClick={() => goPropertyDetailPage(property?._id)}>
+			<Stack className="property-big-card-box" onClick={() => goPropertyDetatilPage(property?._id)}>
 				<Box
 					component={'div'}
 					className={'card-img'}
@@ -76,9 +76,9 @@ const PropertyBigCard = (props: PropertyBigCardProps) => {
 							<Typography className="view-cnt">{property?.propertyViews}</Typography>
 							<IconButton
 								color={'default'}
-								onClick={(e: any) => {
+								onClick={(e:any) => {
 									e.stopPropagation();
-									likePropertyHandler(user, property?._id)
+									likePropertyHandler(user, property._id)
 								}}
 							>
 								{property?.meLiked && property?.meLiked[0]?.myFavorite ? (
