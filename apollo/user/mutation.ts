@@ -287,7 +287,7 @@ export const CREATE_COMMENT = gql`
 `;
 
 export const UPDATE_COMMENT = gql`
-	mutation UpdateComment($input: CommentUpdate!) {
+	mutation UpdateComment($input: UpdateComment!) {
 		updateComment(input: $input) {
 			_id
 			commentStatus
