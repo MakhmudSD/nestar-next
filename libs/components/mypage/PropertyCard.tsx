@@ -15,10 +15,11 @@ interface PropertyCardProps {
 	deletePropertyHandler?: any;
 	memberPage?: boolean;
 	updatePropertyHandler?: any;
+	likePropertyHandler?: any
 }
 
 export const PropertyCard = (props: PropertyCardProps) => {
-	const { property, deletePropertyHandler, memberPage, updatePropertyHandler } = props;
+	const { property, deletePropertyHandler, memberPage, updatePropertyHandler, likePropertyHandler } = props;
 	const device = useDeviceDetect();
 	const router = useRouter();
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
