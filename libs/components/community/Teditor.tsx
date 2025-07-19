@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { memo, useMemo, useRef, useState } from 'react';
 import { Box, Button, FormControl, MenuItem, Stack, Typography, Select, TextField } from '@mui/material';
 import { BoardArticleCategory } from '../../enums/board-article.enum';
 import { Editor } from '@toast-ui/react-editor';
@@ -8,6 +8,10 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import { T } from '../../types/common';
 import '@toast-ui/editor/dist/toastui-editor.css';
+import { CREATE_BOARD_ARTICLE } from '../../../apollo/user/mutation';
+import { useMutation } from '@apollo/client';
+import { Message } from '../../enums/common.enum';
+import { sweetErrorHandling, sweetMixinErrorAlert, sweetTopSmallSuccessAlert } from '../../sweetAlert';
 
 const TuiEditor = () => {
 	const editorRef = useRef<Editor>(null),
@@ -16,7 +20,7 @@ const TuiEditor = () => {
 	const [articleCategory, setArticleCategory] = useState<BoardArticleCategory>(BoardArticleCategory.FREE);
 
 	/** APOLLO REQUESTS **/
-
+	const [createBoardArticle] = useMutation(CREATE_BOARD_ARTICLE);
 	const memoizedValues = useMemo(() => {
 		const articleTitle = '',
 			articleContent = '',
@@ -76,7 +80,35 @@ const TuiEditor = () => {
 		memoizedValues.articleTitle = e.target.value;
 	};
 
-	const handleRegisterButton = async () => {};
+	const handleRegisterButton = async () => {
+		try {
+			const editor = editorRef.current;
+			const articleContent = editor?.getInstance().getHTML() as string;
+			memoizedValues.articleContent = articleContent;
+
+			if(memoizedValues.articleContent === '' || memoizedValues.articleTitle === '') {
+			throw new Error(Message.INSERT_ALL_INPUTS);
+			}	
+
+			await createBoardArticle({
+				variables: {
+					input: {
+						...memoizedValues,
+						articleCategory,
+					},
+				},
+			});
+
+			await sweetTopSmallSuccessAlert('Article created successfully!', 700);
+			await router.push({
+				pathname: '/community',
+		 		query: { category:  "myArticles" },
+			})
+		} catch(err: any) {
+			console.error('Error creating article:', err);
+			sweetErrorHandling(new Error(Message.INSERT_ALL_INPUTS)).then()	
+		}
+	};
 
 	const doDisabledCheck = () => {
 		if (memoizedValues.articleContent === '' || memoizedValues.articleTitle === '') {
