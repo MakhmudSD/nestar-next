@@ -5,6 +5,9 @@ import useDeviceDetect from '../../hooks/useDeviceDetect';
 import Link from 'next/link';
 import { Member } from '../../types/member/member';
 import { REACT_APP_API_URL } from '../../config';
+import { useQuery } from '@apollo/client';
+import { GET_MEMBER } from '../../../apollo/user/query';
+import { T } from '../../types/common';
 
 interface MemberMenuProps {
 	subscribeHandler: any;
@@ -20,6 +23,20 @@ const MemberMenu = (props: MemberMenuProps) => {
 	const { memberId } = router.query;
 
 	/** APOLLO REQUESTS **/
+		const {
+			loading: getMemberLoading,
+			data: getMemberData,
+			error: getMemberError,
+			refetch: getMemberRefetch,
+		} = useQuery(GET_MEMBER, {
+			fetchPolicy: 'network-only',
+			variables: { input: memberId },
+			skip: !memberId,
+			notifyOnNetworkStatusChange: true,
+			onCompleted: (data: T) => {
+				setMember(data?.getMember);
+			},
+		});
 
 	if (device === 'mobile') {
 		return <div>MEMBER MENU MOBILE</div>;
@@ -48,7 +65,7 @@ const MemberMenu = (props: MemberMenuProps) => {
 							<Button
 								variant="outlined"
 								sx={{ background: '#b9b9b9' }}
-								onClick={() => unsubscribeHandler(member?._id, null, memberId)}
+								onClick={() => unsubscribeHandler(member?._id, getMemberRefetch, memberId)}
 							>
 								Unfollow
 							</Button>
@@ -58,7 +75,7 @@ const MemberMenu = (props: MemberMenuProps) => {
 						<Button
 							variant="contained"
 							sx={{ background: '#ff5d18', ':hover': { background: '#ff5d18' } }}
-							onClick={() => subscribeHandler(member?._id, null, memberId)}
+							onClick={() => subscribeHandler(member?._id, getMemberRefetch, memberId)}
 						>
 							Follow
 						</Button>
