@@ -6,13 +6,15 @@ import PropertyCard from '../property/PropertyCard';
 import { Property } from '../../types/property/property';
 import { T } from '../../types/common';
 import { LIKE_TARGET_PROPERTY } from '../../../apollo/user/mutation';
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery, useReactiveVar } from '@apollo/client';
 import { GET_FAVORITES } from '../../../apollo/user/query';
 import { Messages } from '../../config';
 import { sweetMixinErrorAlert } from '../../sweetAlert';
+import { userVar } from '../../../apollo/store';
 
 const MyFavorites: NextPage = () => {
 	const device = useDeviceDetect();
+	const user = useReactiveVar(userVar);
 	const [myFavorites, setMyFavorites] = useState<Property[]>([]);
 	const [total, setTotal] = useState<number>(0);
 	const [searchFavorites, setSearchFavorites] = useState<T>({ page: 1, limit: 6 });
@@ -38,8 +40,9 @@ const MyFavorites: NextPage = () => {
 		setSearchFavorites({ ...searchFavorites, page: value });
 	};
 
-	const likePropertyHandler = async (user: any, id: string) => {
+	const likePropertyHandler = async (e: T, user: any, id: string) => {
 		try {
+			e.stopPropagation();
 			if(!id)	 return;
 			if(!user.id) throw new Error(Messages.error2)
 			await likeTargetProperty({
@@ -62,10 +65,10 @@ const MyFavorites: NextPage = () => {
 						<Typography className="sub-title">We are glad to see you again!</Typography>
 					</Stack>
 				</Stack>
-				<Stack className="favorites-list-box">
+				<Stack className="favorites-list-box">  
 					{myFavorites?.length ? (
 						myFavorites?.map((property: Property) => {
-							return <PropertyCard property={property} likePropertyHandler={likePropertyHandler} myFavorites={true} />;
+							return <PropertyCard property={property}key={property._id} likePropertyHandler={likePropertyHandler} myFavorites={true} />;
 						})
 					) : (
 						<div className={'no-data'}>

@@ -23,15 +23,16 @@ const MemberMenu = (props: MemberMenuProps) => {
 	const { memberId } = router.query;
 
 	/** APOLLO REQUESTS **/
-		const {
+	const {
 			loading: getMemberLoading,
 			data: getMemberData,
 			error: getMemberError,
 			refetch: getMemberRefetch,
 		} = useQuery(GET_MEMBER, {
 			fetchPolicy: 'network-only',
-			variables: { input: memberId },
-			skip: !memberId,
+			variables: {
+				input: memberId,
+			},
 			notifyOnNetworkStatusChange: true,
 			onCompleted: (data: T) => {
 				setMember(data?.getMember);
